@@ -721,7 +721,26 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'ArrowRight' || e.key === 'ArrowUp') show(cur - 1);
   if (e.key === 'f' || e.key === 'F') toggleFS();
 });
-/* Navigation is via arrow buttons + keyboard ONLY. Clicking the background does NOT advance. */
+/* Navigation: arrow buttons + keyboard on desktop; swipe + edge-tap on touch (mobile). */
+
+/* --- touch swipe (mobile) --- */
+let touchX = null, touchY = null, touchT = 0;
+document.addEventListener('touchstart', function (e) {
+  const t = e.changedTouches[0]; touchX = t.screenX; touchY = t.screenY; touchT = Date.now();
+}, { passive: true });
+document.addEventListener('touchend', function (e) {
+  if (touchX === null) return;
+  if (e.target.closest && e.target.closest('#nav, #btn-fs, button, a, #ed-fab, [id^="ed-"]')) { touchX = null; return; }
+  const t = e.changedTouches[0];
+  const dx = t.screenX - touchX, dy = t.screenY - touchY, dt = Date.now() - touchT;
+  if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+    if (dx < 0) show(cur + 1); else show(cur - 1);   // swipe left = next
+  } else if (Math.abs(dx) < 12 && Math.abs(dy) < 12 && dt < 350) {
+    // a clean tap: right half = next, left half = previous
+    if (t.clientX < innerWidth / 2) show(cur - 1); else show(cur + 1);
+  }
+  touchX = null; touchY = null;
+}, { passive: true });
 
 function toggleFS() {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(function () {});
